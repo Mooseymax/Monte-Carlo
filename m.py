@@ -1,5 +1,5 @@
 import numpy as np
-import quandl
+import csv
 
 '''
 Geometric Brownian Motion
@@ -72,43 +72,64 @@ N:      number of increments
 '''
 
 seed = 22
-N = 2.**6
+N = 2.**8
 T = 1.
 
-start = '2017-01-01'
-end = '2017-12-31'
-df = quandl.get('WIKI/AMZN', start_date = start, end_date = end)
-adj_close = df['Adj. Close']
-So = adj_close[0]
+#start = '2017-01-01'
+#end = '2017-12-31'
+#df = quandl.get('WIKI/AMZN', start_date = start, end_date = end)
+#adj_close = df['Adj. Close']
 
-time = np.linspace(1, len(adj_close), len(adj_close))
+adv_perf = []
+mod_perf = []
+cau_perf = []
 
-returns = daily_return(adj_close)
+new = True
+with open('Performance.csv','r') as csvfile:
+    reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+    for row in reader:
+        if(new == True):
+            new = False
+        else:
+            adv_perf.append(float(row[0]))
+            mod_perf.append(float(row[1]))
+            cau_perf.append(float(row[2]))
 
-mu = np.mean(returns) * 252.            # drift coefficient
-sig = np.std(returns) * np.sqrt(252.)   # diffusion coefficient
-W = Brownian(seed, N)[0]
+So_a = adv_perf[0]
+So_m = mod_perf[0]
+So_c = cau_perf[0]
 
-# brownian increment
-b = Brownian(seed, N)[1]
+returns_a = daily_return(adv_perf)
+returns_b = daily_return(mod_perf)
+returns_c = daily_return(cau_perf)
 
-soln  = GBM(So, mu, sig, W, T, N)[0]
-t = GBM(So, mu, sig, W, T, N)[1]
+#252 trade dates in one year usually
 
-b = Brownian(5,N)[1]
-M = 1
-L = N / M
-EM_approx_1 = EM(So, mu, sig, b, T, N, M)[0]
-# time_EM_1 = np.linspace(0.,1.,L+1)
 
 monte = []
-for i in range(1,100):
+'''for i in range(1,2):
     seed = i
-    W = Brownian(seed, N)[0]
-    b = Brownian(seed, N)[1]
-    output = EM(So, mu, sig, b, T, N, M)[0]
+    M = 1
+    L = N / M
+    mu = np.mean(returns_c) * 414.            # drift coefficient
+    sig = np.std(returns_c) * np.sqrt(414.)   # diffusion coefficient
+    W = Brownian(seed, N)[0]                # brownian movement
+    b = Brownian(seed, N)[1]                # brownian increment
+    output = EM(So_c, mu, sig, b, T, N, M)[0]
+    monte.append(output)
+'''
+# Monte carlo simulation
+for i in range(1,1000):
+    seed = i
+    M = 1
+    mu = np.mean(returns_c) * 414.            # drift coefficient
+    sig = np.std(returns_c) * np.sqrt(414.)   # diffusion coefficient
+    W = Brownian(seed, N)[0]                # brownian movement
+    b = Brownian(seed, N)[1]                # brownian increment
+    output = GBM(So_c, mu, sig, W, T, N)[0]
     monte.append(output)
 
+'''
 j = 0
 printable = []
 for i in range(0,len(monte[0])):
@@ -120,3 +141,9 @@ for i in range(0,len(monte[0])):
 
 for x in printable:
     print(x)
+
+'''
+
+# Output, final figure
+for i in monte:
+    print(i[len(i)-1])
